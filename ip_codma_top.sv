@@ -45,9 +45,6 @@ write_state_t   wr_state_next_s;
 dma_state_t     dma_state_r;
 dma_state_t     dma_state_next_s;
 
-// recreating the named signals from the cpu interface
-logic           irq_o;     
-
 //=======================================================================================
 // CONNECT THE MODULES
 //=======================================================================================
@@ -93,7 +90,7 @@ ip_codma_main_machine inst_dma_machine(
     .start_i(cpu_if.start),
     .stop_i(cpu_if.stop),
     .busy_o(cpu_if.busy),
-    .irq_o(irq_o),
+    .irq_o(cpu_if.irq),
     .rd_state_error(rd_state_error),
     .wr_state_error(wr_state_error),    
     .task_pointer_i(cpu_if.task_pointer),
