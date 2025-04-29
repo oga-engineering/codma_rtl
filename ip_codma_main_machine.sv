@@ -1,13 +1,6 @@
-/*
-Oliver Anderson
-Univeristy of Bath
-codma FYP 2023
-
-This file contains the logic for the main state machine for the CODMA.
-*/
 
 module ip_codma_main_machine
-import ip_codma_states_pkg::*;
+import ip_codma_pkg::*;
 (
         // controls and flags   
         input               clk_i,
@@ -20,6 +13,8 @@ import ip_codma_states_pkg::*;
         input               wr_state_error,        
         input [31:0]        task_pointer_i,
         input [31:0]        status_pointer_i,
+
+        mem_interface.master bus_if,
 
         // Read Machine Req
         output logic [31:0] reg_addr,
@@ -35,17 +30,17 @@ import ip_codma_states_pkg::*;
         input                    need_write_o,
         output logic [7:0][31:0] write_data,
 
-        // States
+        // CRC flag
+        input                    crc_flag_i,
         input read_state_t       rd_state_r,
         input read_state_t       rd_state_next_s,
         input write_state_t      wr_state_r,
         input write_state_t      wr_state_next_s,
         output dma_state_t       dma_state_r,
-        output dma_state_t       dma_state_next_s, 
-
-        // CRC flag
-        input                    crc_flag_i       
+        output dma_state_t       dma_state_next_s               
     );
+    
+    
     
     // internal registers
     logic [3:0][31:0] task_dependant_data;
@@ -118,7 +113,7 @@ import ip_codma_states_pkg::*;
             DMA_WRITING:
             begin
                 if (wr_state_next_s == WR_IDLE) begin
-                    if(len_bytes != 'd0 ) begin
+                    if(len_bytes > 'd0 ) begin
                         dma_state_next_s = DMA_DATA_READ;
                     end else if(task_type != 'd2) begin
                         dma_state_next_s = DMA_IDLE;
@@ -146,9 +141,9 @@ import ip_codma_states_pkg::*;
             DMA_ERROR:
             begin
                 // once status has been updated to failed, return to Idle
-                if(wr_state_next_s == WR_IDLE)begin
+                //if(wr_state_next_s == WR_IDLE)begin
                     dma_state_next_s = DMA_IDLE;
-                end
+                //end
             end
             
             //--------------------------------------------------
@@ -161,12 +156,17 @@ import ip_codma_states_pkg::*;
 
         endcase
     end
-
+    logic [31:0] debug_counter;
     always_ff @(posedge clk_i, negedge reset_n_i) begin
+        //if(debug_counter<20) begin
+        //    $display("DUT in %s - going to %s",dma_state_r, dma_state_next_s);
+        //    debug_counter++;
+        //end
         //--------------------------------------------------
         // RESET CONDITIONS
         //--------------------------------------------------
         if (!reset_n_i) begin
+            debug_counter       <= 'd0;
             dma_state_r         <= DMA_IDLE;
             busy_o              <= 'd0;
             irq_o               <= 'd0;
@@ -214,13 +214,13 @@ import ip_codma_states_pkg::*;
                 irq_o       <= 'd0;
                 
                 //update the pointer (perhaps add an extra state or do this in writing state ?)
-                if (dma_state_r == DMA_CRC || dma_state_r == DMA_WRITING) begin
+                /* if (dma_state_r == DMA_CRC || dma_state_r == DMA_WRITING) begin
                     need_write_i    <= 'd1;
                     write_data      <= 'h0;
                     reg_size_wr     <= 'd3;
                     reg_addr_wr     <= status_pointer_i;
                 // Deassert busy and interrupt when done
-                end else if (wr_state_next_s == WR_IDLE && busy_o) begin
+                end else */ if (/*wr_state_next_s == WR_IDLE && */ busy_o) begin
                     irq_o   <= 'd1;
                     busy_o  <= 'd0;
                 end
@@ -282,6 +282,7 @@ import ip_codma_states_pkg::*;
                     source_addr <= data_reg[1];
                     destin_addr <= data_reg[2];
                     len_bytes   <= data_reg[3];
+                    $display("DUT: task_type: %d src_addr: %d dst_addr:%d len_bytes: %d", data_reg[0], data_reg[1], data_reg[2], data_reg[3]);
                     // define burst size
                     // function of task type
                     if (data_reg[0] == 'd0) begin
@@ -325,6 +326,7 @@ import ip_codma_states_pkg::*;
                     end else if (reg_size_wr == 'd9) begin
                         len_bytes <= len_bytes - 'd32;
                     end
+                    $display("len_bytes reduced to %d",len_bytes);
                 end
             
             //------------------------------------------------------------------------

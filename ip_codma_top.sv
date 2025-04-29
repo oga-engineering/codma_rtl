@@ -5,7 +5,10 @@ codma FYP 2023
 
 Top level module file for the codma. This file connects the codma, read and write machine modules.
 It is the ONLY module to drive the bus interface signals to avoid contentions.
+It will contain the assertions to confirm the state machines do not fall into unknown states. Though
+the unknown states will be defined for a "belt and braces" approach to eliminate this as a point of failure.
 */
+
 
 
 //=======================================================================================
@@ -13,28 +16,15 @@ It is the ONLY module to drive the bus interface signals to avoid contentions.
 //=======================================================================================
 module ip_codma_top
 #()(
-    // clock and reset
-    input 		clk_i,
-    input		reset_n_i,
-
-    // control interface
-    input		    start_i,
-    input		    stop_i,
-    output logic	busy_o,
-    input [31:0]    task_pointer_i,
-    input [31:0]    status_pointer_i,
-
-    // bus interface
-    BUS_IF.master	bus_if,
-
-    // interrupt output
-    output logic	irq_o
-
+    input                   clk_i,
+    input                   reset_n_i,
+    cpu_interface.slave     cpu_if,
+    mem_interface.master    bus_if
 );
+import ip_codma_pkg::* ;
 //=======================================================================================
 // INTERNAL SIGNALS AND MARKERS
 //=======================================================================================
-import ip_codma_states_pkg::* ;
 
 logic [31:0] reg_addr, reg_addr_wr;
 logic [7:0]  reg_size, reg_size_wr;
@@ -50,12 +40,13 @@ logic             crc_flag_s;
 
 read_state_t    rd_state_r;
 read_state_t    rd_state_next_s;
-
 write_state_t   wr_state_r;
 write_state_t   wr_state_next_s;
-
 dma_state_t     dma_state_r;
 dma_state_t     dma_state_next_s;
+
+// recreating the named signals from the cpu interface
+logic           irq_o;     
 
 //=======================================================================================
 // CONNECT THE MODULES
@@ -67,15 +58,15 @@ ip_codma_read_machine inst_rd_machine(
     .rd_state_error(rd_state_error),
     .need_read_i(need_read_i),
     .need_read_o(need_read_o),
-    .stop_i(stop_i),
+    .stop_i(cpu_if.stop),
     .data_reg_o(data_reg),
+    .bus_if(bus_if),
     .rd_state_r(rd_state_r),
     .rd_state_next_s(rd_state_next_s),
     .wr_state_r(wr_state_r),
     .wr_state_next_s(wr_state_next_s),
     .dma_state_r(dma_state_r),
-    .dma_state_next_s(dma_state_next_s),
-    .bus_if(bus_if)
+    .dma_state_next_s(dma_state_next_s)
 );
 
 ip_codma_write_machine inst_wr_machine(
@@ -84,28 +75,29 @@ ip_codma_write_machine inst_wr_machine(
     .wr_state_error(wr_state_error),
     .need_write_i(need_write_i),
     .need_write_o(need_write_o),
-    .stop_i(stop_i),
+    .stop_i(cpu_if.stop),
     .word_count_wr(write_count_s),
+    .bus_if(bus_if),
     .rd_state_r(rd_state_r),
     .rd_state_next_s(rd_state_next_s),
     .wr_state_r(wr_state_r),
     .wr_state_next_s(wr_state_next_s),
     .dma_state_r(dma_state_r),
-    .dma_state_next_s(dma_state_next_s),
-    .bus_if(bus_if)
+    .dma_state_next_s(dma_state_next_s)
 );
 
 ip_codma_main_machine inst_dma_machine(
+    .bus_if(bus_if),
     .clk_i(clk_i),
     .reset_n_i(reset_n_i),
-    .start_i(start_i),
-    .stop_i(stop_i),
-    .busy_o(busy_o),
+    .start_i(cpu_if.start),
+    .stop_i(cpu_if.stop),
+    .busy_o(cpu_if.busy),
     .irq_o(irq_o),
     .rd_state_error(rd_state_error),
     .wr_state_error(wr_state_error),    
-    .task_pointer_i(task_pointer_i),
-    .status_pointer_i(status_pointer_i),
+    .task_pointer_i(cpu_if.task_pointer),
+    .status_pointer_i(cpu_if.status_pointer),
     .reg_addr(reg_addr),
     .reg_size(reg_size),
     .reg_addr_wr(reg_addr_wr),    
@@ -116,13 +108,13 @@ ip_codma_main_machine inst_dma_machine(
     .need_write_o(need_write_o),
     .write_data(write_data),
     .data_reg(data_reg),
+    .crc_flag_i(crc_flag_s),
     .rd_state_r(rd_state_r),
     .rd_state_next_s(rd_state_next_s),
     .wr_state_r(wr_state_r),
     .wr_state_next_s(wr_state_next_s),
     .dma_state_r(dma_state_r),
-    .dma_state_next_s(dma_state_next_s),
-    .crc_flag_i(crc_flag_s)
+    .dma_state_next_s(dma_state_next_s)    
 );
 
 ip_codma_crc inst_compute_crc (
@@ -134,7 +126,6 @@ ip_codma_crc inst_compute_crc (
 );
 
 //=======================================================================================
-//      DRIVE THE BUS. BRUM BRUM
 //      .-------------------------------------------------------------.
 //      '------..-------------..----------..----------..----------..--.|
 //      |       \\            ||          ||          ||          ||  ||
@@ -151,22 +142,18 @@ ip_codma_crc inst_compute_crc (
 
 // track the changes of states for the dma - error checking
 logic [3:0] prev_dma_state;
+
 always_ff @(posedge clk_i) begin
     if (!reset_n_i) begin
-        prev_dma_state <= DMA_IDLE;
+        prev_dma_state  <= DMA_IDLE;
     end else begin
         prev_dma_state <= dma_state_r;
     end
 end
 
+// This would be better placed in a clocked process to create output registers.
 always_comb begin
-    // Standard Values
-    bus_if.read         = 'd0;
-    bus_if.write        = 'd0;
-    bus_if.write_valid  = 'd0;
-    bus_if.size         = 'd9;
-    
-
+        
     // Error condition - But allow for writing to the status pointer
     if (dma_state_r == DMA_ERROR && prev_dma_state != DMA_ERROR) begin
         bus_if.read         = 'd0;
@@ -190,7 +177,12 @@ always_comb begin
         bus_if.addr         = reg_addr_wr;
         bus_if.write_valid  = 'd1;
         bus_if.write_data   = {write_data[write_count_s+1],write_data[write_count_s]};
-    end 
+    end else begin
+        bus_if.read         = 'd0;
+        bus_if.write        = 'd0;
+        bus_if.write_valid  = 'd0;
+        bus_if.size         = 'd9;
+    end
 end
 
 

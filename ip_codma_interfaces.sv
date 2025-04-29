@@ -1,5 +1,5 @@
 // Bus interface description
-interface BUS_IF;
+interface mem_interface;
 
 	logic		read;			// Address phase signal for a read request
 	logic		write;			// Address phase signal for a write request
@@ -60,6 +60,26 @@ interface BUS_IF;
 		input	write_data,
 		input	write_valid,
 		input	error
+	);
+
+endinterface
+
+interface cpu_interface;
+
+	bit start, stop, irq, busy;
+	logic [31:0] status_pointer, task_pointer;
+
+	modport master(
+		output 	status_pointer, task_pointer, start, stop,
+		input 	irq, busy
+	);
+	modport slave (
+		output irq, busy,
+		input status_pointer, task_pointer, start, stop
+	);
+	modport monitor (
+		output irq, busy,
+		input status_pointer, task_pointer, start, stop
 	);
 
 endinterface
