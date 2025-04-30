@@ -36,4 +36,4 @@ package ip_codma_pkg;
         DMA_UNUSED    = 3'b111
       }
       dma_state_t;
-endpackage
+endpackage;

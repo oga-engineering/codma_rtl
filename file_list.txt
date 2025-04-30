@@ -1,0 +1,8 @@
+ip_codma_pkg.sv 
+ip_codma_pkg.sv 
+ip_codma_crc.sv 
+ip_codma_interfaces_verilator.sv 
+ip_codma_main_machine.sv 
+ip_codma_rd_machine.sv 
+ip_codma_wr_machine.sv
+ip_codma_top.sv

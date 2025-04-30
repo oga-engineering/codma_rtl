@@ -14,18 +14,18 @@ import ip_codma_pkg::*;
         input [31:0]        task_pointer_i,
         input [31:0]        status_pointer_i,
 
-        mem_interface.master bus_if,
+        inout mem_interface_t bus_if,
 
         // Read Machine Req
         output logic [31:0] reg_addr,
-        output logic [7:0]  reg_size,
+        output logic [3:0]  reg_size,
         output logic        need_read_i,
         input               need_read_o,
         input [7:0][31:0]   data_reg,
 
         // Write Machine Req
         output logic [31:0]      reg_addr_wr,
-        output logic [7:0]       reg_size_wr,       
+        output logic [3:0]       reg_size_wr,       
         output logic             need_write_i,
         input                    need_write_o,
         output logic [7:0][31:0] write_data,
@@ -339,4 +339,4 @@ import ip_codma_pkg::*;
         end
     end
 
-endmodule
+endmodule;

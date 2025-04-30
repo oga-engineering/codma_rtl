@@ -96,4 +96,4 @@ module ip_codma_crc (
             end
         end
     end
-endmodule
+endmodule;

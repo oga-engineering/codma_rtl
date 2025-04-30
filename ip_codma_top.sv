@@ -18,8 +18,8 @@ module ip_codma_top
 #()(
     input                   clk_i,
     input                   reset_n_i,
-    cpu_interface.slave     cpu_if,
-    mem_interface.master    bus_if
+    inout cpu_interface_t   cpu_if,
+    inout mem_interface_t   bus_if
 );
 import ip_codma_pkg::* ;
 //=======================================================================================
@@ -27,7 +27,7 @@ import ip_codma_pkg::* ;
 //=======================================================================================
 
 logic [31:0] reg_addr, reg_addr_wr;
-logic [7:0]  reg_size, reg_size_wr;
+logic [3:0]  reg_size, reg_size_wr;
 logic need_read_i, need_read_o;
 logic need_write_i, need_write_o;
 logic rd_state_error, wr_state_error;
@@ -183,4 +183,4 @@ always_comb begin
 end
 
 
-endmodule
+endmodule;
