@@ -114,6 +114,7 @@ ip_codma_main_machine inst_dma_machine(
     .dma_state_next_s(dma_state_next_s)    
 );
 
+/*
 ip_codma_crc inst_compute_crc (
     .clk_i(clk_i),
     .reset_n_i(reset_n_i),
@@ -121,6 +122,7 @@ ip_codma_crc inst_compute_crc (
     .crc_complete_flag(crc_flag_s),
     .crc_output(crc_code)
 );
+*/
 
 //=======================================================================================
 //      .-------------------------------------------------------------.
@@ -138,7 +140,7 @@ ip_codma_crc inst_compute_crc (
 //=======================================================================================
 
 // track the changes of states for the dma - error checking
-logic [3:0] prev_dma_state;
+dma_state_t prev_dma_state;
 
 always_ff @(posedge clk_i) begin
     if (!reset_n_i) begin
