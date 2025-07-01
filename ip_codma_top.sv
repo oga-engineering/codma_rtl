@@ -16,16 +16,23 @@ the unknown states will be defined for a "belt and braces" approach to eliminate
 //=======================================================================================
 module ip_codma_top
 #()(
-    input                   clk_i,
     input                   reset_n_i,
-    inout cpu_interface_t   cpu_if,
-    inout mem_interface_t   bus_if
+    cpu_interface_t.slave   cpu_if,
+    mem_interface_t.master  bus_if
 );
 import ip_codma_pkg::* ;
 //=======================================================================================
 // INTERNAL SIGNALS AND MARKERS
 //=======================================================================================
 
+// Pass the clock through
+assign bus_if.clock = cpu_if.clock;
+
+// Wire clock in this design
+logic clk_i;
+assign clk_i = cpu_if.clock;
+
+// Define signals
 logic [31:0] reg_addr, reg_addr_wr;
 logic [3:0]  reg_size, reg_size_wr;
 logic need_read_i, need_read_o;

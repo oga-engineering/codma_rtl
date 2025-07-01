@@ -1,6 +1,7 @@
 // Bus interface description
 interface mem_interface;
 
+	logic		clock;
 	logic		read;			// Address phase signal for a read request
 	logic		write;			// Address phase signal for a write request
 //	logic		read_modify_write;	// Address phase signal to lock target from other requests (block other accesses) as we are doing a read followed by a write to the same target and need no interference - this signal is expected to be high on a read request and stay high until the write request
@@ -17,6 +18,7 @@ interface mem_interface;
 
 	// master modport
 	modport master (
+		output  clock,
 		output	read,
 		output	write,
 //		output	read_modify_write,
@@ -33,6 +35,7 @@ interface mem_interface;
 
 	// slave modport
 	modport slave (
+		input	clock,
 		input	read,
 		input	write,
 //		input	read_modify_write,
@@ -49,6 +52,7 @@ interface mem_interface;
 
 	// monitor modport may be useful for checking in testbench (maybe...)
 	modport monitor (
+		input	clock,
 		input	read,
 		input	write,
 //		input	read_modify_write,
@@ -71,16 +75,16 @@ interface cpu_interface;
 	logic [31:0] status_pointer, task_pointer;
 
 	modport master(
-		output 	status_pointer, task_pointer, start, stop,
+		output 	status_pointer, task_pointer, start, stop, clock
 		input 	irq, busy
 	);
 	modport slave (
 		output irq, busy,
-		input status_pointer, task_pointer, start, stop
+		input status_pointer, task_pointer, start, stop, clock
 	);
 	modport monitor (
 		output irq, busy,
-		input status_pointer, task_pointer, start, stop
+		input status_pointer, task_pointer, start, stop, clock
 	);
 
 endinterface;
