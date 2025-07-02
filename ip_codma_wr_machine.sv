@@ -16,7 +16,7 @@ import ip_codma_pkg::*;
 
         output logic [7:0]      word_count_wr,
 
-        inout mem_interface_t  bus_if,
+        mem_interface.master    bus_if,
 
         input read_state_t      rd_state_r,
         input read_state_t      rd_state_next_s,

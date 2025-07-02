@@ -14,7 +14,7 @@ import ip_codma_pkg::*;
         input [31:0]        task_pointer_i,
         input [31:0]        status_pointer_i,
 
-        inout mem_interface_t bus_if,
+        mem_interface.master bus_if,
 
         // Read Machine Req
         output logic [31:0] reg_addr,

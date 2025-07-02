@@ -16,9 +16,9 @@ the unknown states will be defined for a "belt and braces" approach to eliminate
 //=======================================================================================
 module ip_codma_top
 #()(
-    input                   reset_n_i,
-    cpu_interface_t.slave   cpu_if,
-    mem_interface_t.master  bus_if
+    input                 reset_n_i,
+    cpu_interface.slave   cpu_if,
+    mem_interface.master  bus_if
 );
 import ip_codma_pkg::* ;
 //=======================================================================================
@@ -158,7 +158,7 @@ always_ff @(posedge clk_i) begin
 end
 
 // This would be better placed in a clocked process to create output registers.
-always_comb begin
+always @(posedge cpu_if.clock) begin
         
     // Error condition - But allow for writing to the status pointer
     if (dma_state_r == DMA_ERROR && prev_dma_state != DMA_ERROR) begin

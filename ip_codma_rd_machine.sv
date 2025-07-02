@@ -24,7 +24,7 @@ import ip_codma_pkg::*;
         output logic                need_read_o,
         input                       stop_i,
         output logic [7:0][31:0]    data_reg_o,
-        inout  mem_interface_t      bus_if,
+        mem_interface.master        bus_if,
         output read_state_t         rd_state_r,
         output read_state_t         rd_state_next_s,
         input  write_state_t        wr_state_r,

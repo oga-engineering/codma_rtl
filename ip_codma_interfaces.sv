@@ -71,11 +71,11 @@ endinterface;
 
 interface cpu_interface;
 
-	bit start, stop, irq, busy;
+	bit start, stop, irq, busy, clock;
 	logic [31:0] status_pointer, task_pointer;
 
 	modport master(
-		output 	status_pointer, task_pointer, start, stop, clock
+		output 	status_pointer, task_pointer, start, stop, clock,
 		input 	irq, busy
 	);
 	modport slave (
